@@ -1,0 +1,235 @@
+#google text to speech library used to translate text to speech
+!pip install gTTs 
+!pip install English-to-Hindi
+!pip install translate
+!pip install SpeechRecognition
+!pip install pipwin
+!pipwin install PyAudio
+# In[29]:
+
+
+#nltk is library used for provide some set of algorithms for nlp
+#It contains text processing libraries for tokenization, classification and tagging.
+#natural language toolkit
+import nltk 
+#stopwords are the words that you donot want to use to describe the topic.
+from nltk.corpus import stopwords
+###########################
+import numpy as np
+from gtts import gTTS
+#provides for useful shell environment to execute python code
+import IPython
+from IPython.display import Audio
+from scipy.io import wavfile
+###########################
+
+import json
+import random
+from nltk.tag import pos_tag # for proper noun
+#Tokenization means splitting up a larger body of text into smaller lines, words or even creating words 
+#for a non-English language.
+from nltk.tokenize import word_tokenize, sent_tokenize
+#stem is basically used to reduce the words to the root word
+#Lemmatizer is similar to stemming but it group together words and bring context to it.
+#It basically links words of similar meanings to one word.
+from nltk.stem import WordNetLemmatizer
+from nltk.stem import PorterStemmer
+
+
+# In[30]:
+
+
+filename="intents.json"
+
+
+# In[31]:
+
+
+intents = json.loads(open(filename).read())
+
+
+# In[32]:
+
+
+print(intents)
+
+
+# In[33]:
+
+
+words=[]
+classes=[]
+documents=[]
+ignore_letters = ['!', '?', ',', '.',';',':']
+
+
+# In[34]:
+
+
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+lemmatizer = WordNetLemmatizer()
+stopWords = list(set(stopwords.words("english")))
+for intent in intents['intents']:
+    for pattern in intent['patterns']:
+        word_list = nltk.word_tokenize(pattern)
+        word_list=[lemmatizer.lemmatize(word.lower()) for word in word_list if word not in stopWords and word not in ignore_letters ]
+        words.extend(word_list)
+        # print(word_list)
+        documents.append((word_list,intent['tag']))
+        if intent['tag'].lower() not in classes:
+            classes.append(intent['tag'].lower())
+print(documents)
+
+
+# In[35]:
+
+
+words = sorted(set(words))
+classes = sorted(set(classes))
+print(documents)
+
+
+# In[36]:
+
+
+from translate import Translator
+print("HEY I AM QBOT! ")
+print("How you want to give the input?(audio or text)")
+print("HOW CAN I HELP YOU?")
+into = "HEY I AM Q BOT! How you want to give the input? "
+translator= Translator(to_lang="Hindi")
+translation = translator.translate(into)
+print (translation)
+audio = gTTS(translation)
+audio = gTTS(into)
+audio.save('2.wav')
+sound_file = '2.wav'
+
+#from translate import Translator
+#translator= Translator(to_lang="Hindi")
+#translation = translator.translate(into)
+#print (translation)
+
+
+# In[37]:
+
+
+Audio('2.wav',rate=44100,autoplay = True)
+
+
+# In[ ]:
+
+
+import speech_recognition as s_r
+a=[]
+print(s_r.__version__) # just to print the version not required
+r = s_r.Recognizer()
+my_mic = s_r.Microphone(device_index=1) #my device index is 1, you have to put your device index
+with my_mic as source:
+    print("Say now!!!!")
+    audio = r.listen(source) #take voice input from the microphone
+    a.append(r.recognize_google(audio))
+print(r.recognize_google(audio)) 
+
+#a=input("How you want to give the input?(audio or text)")
+#audio = gTTS("How you want to give the input?(audio or text)")
+#audio = gTTS(a)
+#audio.save('2.wav')
+#sound_file = '2.wav'
+for i in a:
+    if i=="audio":
+        c=[]
+        print(s_r.__version__) # just to print the version not required
+        r = s_r.Recognizer()
+        my_mic = s_r.Microphone(device_index=1) #my device index is 1, you have to put your device index
+        with my_mic as source:
+            print("What you want to ask? SAY NOW!!!!")
+            audio = r.listen(source) #take voice input from the microphone
+            c.append(r.recognize_google(audio))
+        print(r.recognize_google(audio)) 
+#print(c)
+        for i in c:
+            p=nltk.word_tokenize(i)
+            p=[lemmatizer.lemmatize(word.lower()) for word in p if word not in stopWords and word not in ignore_letters ]
+            print(p)
+#c=nltk.word_tokenize(c)
+#c=[lemmatizer.lemmatize(word.lower()) for word in c if word not in stopWords and word not in ignore_letters ]
+        print(c)
+    elif i=="text":
+        chat=input()
+        p=nltk.word_tokenize(chat)
+        p=[lemmatizer.lemmatize(word.lower()) for word in p if word not in stopWords and word not in ignore_letters ]
+        print(p)
+
+
+    
+
+
+# In[ ]:
+
+
+final_tag={}
+for tag in classes:
+  final_tag[tag]=0
+print(final_tag)
+
+
+# In[ ]:
+
+
+for doc in documents:
+  for i in p:
+    for que in doc[0]:
+      if i==que:
+        # print(doc[1])
+        final_tag[doc[1].lower()]+=1
+print(final_tag)
+    
+
+
+# In[ ]:
+
+
+select_tag=max(final_tag,key=final_tag.get)
+# print(max(final_tag,key=final_tag.get))
+if final_tag.get(select_tag) == None or final_tag.get(select_tag) == 0:
+  select_tag = 'default'
+# else:
+#   select_tag='default'
+print(select_tag)
+
+
+# In[ ]:
+
+
+ansList=[]
+for intent in intents['intents']:
+  if intent['tag'].lower()==select_tag:
+    for response in intent['responses']:
+      ansList.append(response)
+      # print(response)
+      result=random.choice(ansList)
+audio = gTTS(result)
+audio.save('1.wav')
+sound_file = '1.wav'
+# Audio(sound_file,rate="framerate")
+# IPython.display.Audio('1.wav')
+# Audio('1.wav',rate=44100)
+print(result)
+
+
+# In[ ]:
+
+
+Audio('1.wav',rate=600000,autoplay = True)
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
